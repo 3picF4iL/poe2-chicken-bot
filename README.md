@@ -8,5 +8,9 @@ low health, mana, or shield. It is a simple bot that will try to help you to avo
 2. Install dependencies with `pip install -r requirements.txt`
 3. Run the bot with `python main.py`
 
+OR
+
+Download released .exe file
+
 ## Notes
 I will not be responsible for any bans that you may receive from using this bot. Use it at your own risk.
