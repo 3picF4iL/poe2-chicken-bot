@@ -6,6 +6,13 @@ Description:
 
     The bot will also block the escape and space keys for 2 seconds after sending the escape key press to prevent
     accidental double presses.
+
+    Requirements:
+        - Python 3.9+
+        - pymem
+        - pywin32
+        - keyboard
+        - tkinter
 """
 
 
