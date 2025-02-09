@@ -1,3 +1,5 @@
+name: Build and Deploy POE2 - Chicken bot
+
 on:
   # Manually trigger the workflow from the GitHub Actions page
   workflow_dispatch:
