@@ -1,6 +1,6 @@
 # Path of Exile 2 - Chicken Bot
 This is a bot for Path of Exile 2 that will automatically try to press ESC when the character is about to die from
-low health, mana or shield. It is a simple bot that will try help you to avoid dying in the game.
+low health, mana, or shield. It is a simple bot that will try to help you to avoid dying in the game.
 
 ## How to use
 
