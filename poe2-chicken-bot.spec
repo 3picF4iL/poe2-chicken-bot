@@ -16,6 +16,6 @@ a = Analysis(['main.py'],
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas,
           name='poe2-chicken-bot', debug=False, bootloader_ignore_signals=False,
-          strip=False, upx=True, console=True, onefile=True)
+          strip=False, upx=True, console=True, onefile=True, icon='media/poe2-chicken-bot.ico'))
 coll = COLLECT(exe, a.binaries, a.zipfiles, a.datas,
                strip=False, upx=True, name='poe2-chicken-bot')
