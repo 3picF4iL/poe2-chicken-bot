@@ -11,6 +11,44 @@ import tkinter as tk
 import keyboard
 
 
+RESOURCE_CONFIG = {
+    "hp": {
+         "base": 0x03BA8868,
+         "offsets": [0x98, 0x68, 0x474],
+         "default_threshold": 400
+    },
+    "mp": {
+         "base": 0x03CCF4F8,
+         "offsets": [0x58, 0x0, 0x110, 0xF8, 0x1A0, 0x19C],
+         "default_threshold": 1000
+    },
+    "ms": {
+         "base": 0x038AD5B8,
+         "offsets": [0xC8, 0x18, 0x110, 0xF8, 0x1A0, 0x1A0],
+         "default_threshold": 10
+    }
+}
+
+
+class Resource:
+    def __init__(self, name, base, offsets, default_threshold):
+        self.name = name
+        self.base = base
+        self.offsets = offsets
+        self.threshold = default_threshold
+
+    def calculate_address(self, pm, process_name):
+        module = pymem.process.module_from_name(pm.process_handle, process_name)
+        base_address = module.lpBaseOfDll
+        addr = base_address + self.base
+        for offset in self.offsets:
+            try:
+                addr = pm.read_longlong(addr) + offset
+            except pymem.exception.MemoryReadError:
+                pass
+        return addr
+
+
 class GUI:
     def __init__(self, start_monitor, stop_monitor):
         self.root = tk.Tk()
@@ -23,7 +61,7 @@ class GUI:
 
         self.selected_resource = tk.StringVar(value="hp")
         self.escape_status_label = None
-        self.setting_file = "poe2_chickenbot.config"
+        self.setting_file = "poe2_chicken_bot.config"
         self.start_monitor = start_monitor
         self.stop_monitor = stop_monitor
 
@@ -31,21 +69,8 @@ class GUI:
         self.threshold_entries = {}
 
         self.resource_config = {
-            "hp": {
-                "base": 0x03BA8868,
-                "offsets": [0x98, 0x68, 0x474],
-                "threshold": 400
-            },
-            "mp": {
-                "base": 0x03CCF4F8,
-                "offsets": [0x58, 0x0, 0x110, 0xF8, 0x1A0, 0x19C],
-                "threshold": 1000
-            },
-            "ms": {
-                "base": 0x038AD5B8,
-                "offsets": [0xC8, 0x18, 0x110, 0xF8, 0x1A0, 0x1A0],
-                "threshold": 10
-            }
+            key: Resource(key, cfg["base"], cfg["offsets"], cfg["default_threshold"])
+            for key, cfg in RESOURCE_CONFIG.items()
         }
 
         self.monitor_button = None
@@ -106,21 +131,16 @@ class GUI:
                 settings = f.read().split(',')
             for resource_key, setting in zip(self.resource_config.keys(), settings):
                 try:
-                    self.resource_config[resource_key]['threshold'] = int(setting)
+                    self.resource_config[resource_key].threshold = int(setting)
                 except ValueError:
-                    self.resource_config[resource_key]['threshold'] = 0
+                    self.resource_config[resource_key].threshold = 0
                 self.threshold_entries[resource_key].delete(0, tk.END)
                 self.threshold_entries[resource_key].insert(0, setting)
 
     def save_settings(self):
         with open(self.setting_file, "w") as f:
-            filtered_entries = [
-                self.threshold_entries[key].get()
-                if self.threshold_entries[key].get()
-                else "0"
-                for key in self.threshold_entries
-            ]
-            line = ",".join(filtered_entries)
+            line = ",".join([self.threshold_entries[key].get() if self.threshold_entries[key].get() else "0"
+                             for key in self.threshold_entries])
             f.write(line)
 
     def exit_app(self):
@@ -159,13 +179,13 @@ class GUI:
         self.escape_status_label.config(text=status)
 
     def get_resource_threshold(self, resource_key):
-        return self.resource_config[resource_key]["threshold"]
+        return self.resource_config[resource_key].threshold
 
     def get_resource_base(self, resource_key):
-        return self.resource_config[resource_key]["base"]
+        return self.resource_config[resource_key].base
 
     def get_resource_offsets(self, resource_key):
-        return self.resource_config[resource_key]["offsets"]
+        return self.resource_config[resource_key].offsets
 
     def draw(self):
         self.root.mainloop()
@@ -176,21 +196,12 @@ class ChickenBot:
         self.PROCESS_NAME = "PathOfExileSteam.exe"
         self.ESCAPED = False
         self.is_monitoring = False
-        self.monitor_threads = []
 
         self.gui = GUI(self.run_monitor, self.stop_monitor)
 
         self.pointer = None
         self.pm = None
         self.hwnd = None
-
-    def get_resource_base_offset(self):
-        res = self.gui.get_selected_resource()
-        return self.gui.get_resource_base(res)
-
-    def get_resource_offsets(self):
-        res = self.gui.get_selected_resource()
-        return self.gui.get_resource_offsets(res)
 
     def _setup_backend(self):
         try:
@@ -251,8 +262,7 @@ class ChickenBot:
                 self.ESCAPED = False
 
             current_time = time.time()
-            if ((resource_int == 0 or resource_int >= 20000 or self.ESCAPED)
-                    and (current_time - last_backend_setup > backend_interval)):
+            if (resource_int == 0 or resource_int >= 20000 or self.ESCAPED) and (current_time - last_backend_setup > backend_interval):
                 print("Waiting for memory data...")
                 try:
                     self._setup_backend()
@@ -263,7 +273,9 @@ class ChickenBot:
             time.sleep(0.05)
 
     def setup_pointer(self):
-        self.pointer = self.calculate_address()
+        res_key = self.gui.get_selected_resource()
+        resource_obj = self.gui.resource_config[res_key]
+        self.pointer = resource_obj.calculate_address(self.pm, self.PROCESS_NAME)
 
     def run_monitor(self):
         try:
@@ -276,7 +288,6 @@ class ChickenBot:
             self.gui.update_monitor_button(is_monitoring=True)
             monitor_thread = threading.Thread(target=self.resource_monitor_loop, name="Monitor", daemon=True)
             monitor_thread.start()
-            self.monitor_threads.append(monitor_thread)
         else:
             msg = f"Process {self.PROCESS_NAME} not found."
             self.gui.send_info(msg, "err")
@@ -295,26 +306,14 @@ class ChickenBot:
     def _kb_panic():
         keyboard.block_key('esc')
         keyboard.block_key('space')
-        time.sleep(2)
-        keyboard.unblock_key('esc')
-        keyboard.unblock_key('space')
+        timer = threading.Timer(2.0, lambda: (keyboard.unblock_key('esc'), keyboard.unblock_key('space')))
+        timer.start()
 
     def read_resource_value(self, addr):
         try:
             return self.pm.read_int(addr)
         except Exception:
             return 0
-
-    def calculate_address(self):
-        module = pymem.process.module_from_name(self.pm.process_handle, self.PROCESS_NAME)
-        base_address = module.lpBaseOfDll
-        addr = base_address + self.get_resource_base_offset()
-        for offset in self.get_resource_offsets():
-            try:
-                addr = self.pm.read_longlong(addr) + offset
-            except pymem.exception.MemoryReadError:
-                pass
-        return addr
 
 
 if __name__ == '__main__':
