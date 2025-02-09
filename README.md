@@ -1,27 +1,41 @@
 # Path of Exile 2 - Chicken Bot
-This is a simple bot for Path of Exile 2 that will automatically try to press ESC when the character is about to die. It will also prevent from hitting ESC or SPACE by blocking those keys for 2 seconds while in panic mode.
 
-This bot works only on the solo map clearing.
+**Path of Exile 2 - Chicken Bot** is a simple automation tool designed for solo map clearing in *Path of Exile 2*. The bot continuously monitors your character's resource levels (HP, Mana, Shield) and automatically triggers a panic mode by simulating an ESC key press when these levels fall below a specified threshold. During panic mode, the bot also blocks the ESC and SPACE keys for 2 seconds to prevent any accidental interruption of the escape process.
 
-## How to start
+## Requirements
 
-1. Download package
-2. Install dependencies with `pip install -r requirements.txt`
-3. Run the bot with `python main.py`
+- **Operating System:** Windows
+- **Administrator Privileges:** Required for reading process memory and controlling the keyboard.
+- **Python 3.x**
 
-OR
+## Installation
 
-Download released .exe file
+1. **Download the package.**
+2. **Install dependencies:**
 
-## How to use
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-1. Launch bot
-2. Set your threshold (it depends on what char and build you have) but do not set lower values than ~20% of your summarized source points (hp, mana, shield)
-   e.g. my sorc has 1550 HP and 3800 MP (where dmg hits my mana points first). My threshold is 1070 on HP for chicken bot.
-   `1550 + 3800 = 5350 -> * 0.2 = 1070`
-   
-3. Click start
-4. Launch game 
+3.	**Run the bot:**
 
-## Notes
-I will not be responsible for any bans that you may receive from using this bot. Use it at your own risk.
+    ```bash
+    python main.py
+    ```
+
+Alternatively, you can download the released executable (.exe) file.
+
+## How to Use
+1.	Launch the bot.
+2.	Set your resource threshold:
+    The threshold value depends on your character build and total resource pool (HP, Mana, Shield).
+    It is recommended not to set the threshold lower than approximately 20% of your total resource points.
+    Example:
+    If your character has 1550 HP and 3800 Mana (with damage applied to mana first), the total resource pool is 5350. In this case, a threshold of around 1070 (20% of 5350) is recommended.
+3.	Click the Start button.
+4.	Launch the game.
+
+## Disclaimer
+
+Use at Your Own Risk!
+The author is not responsible for any bans or adverse consequences resulting from the use of this bot. Use it only in controlled environments and during solo map clearing
