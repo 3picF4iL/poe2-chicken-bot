@@ -1,8 +1,9 @@
 name: Build and Deploy POE2 - Chicken bot
 
 on:
-  # Manually trigger the workflow from the GitHub Actions page
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -26,16 +27,9 @@ jobs:
       run: pyinstaller poe2-chicken-bot.spec
       shell: cmd
 
-    - name: Check if executable was created
-      run: |
-        if not exist .\dist\${{ env.FILENAME }}\${{ env.FILENAME }}.exe (
-          echo "Executable file not found."
-          exit 1
-        )
-      shell: cmd
-
-    - name: Upload the full package
-      uses: actions/upload-artifact@v4
+    - name: Create deployment
+      uses: softprops/action-gh-release@v2
       with:
-        name: ${{ env.FILENAME }}.exe
-        path: dist/${{ env.FILENAME }}.exe
+        files: dist/poe2-chicken-bot.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
