@@ -15,12 +15,12 @@ RESOURCE_CONFIG = {
     "hp": {
          "base": 0x03BA8868,
          "offsets": [0x98, 0x68, 0x474],
-         "default_threshold": 400
+         "default_threshold": 500
     },
     "mp": {
          "base": 0x03CCF4F8,
          "offsets": [0x58, 0x0, 0x110, 0xF8, 0x1A0, 0x19C],
-         "default_threshold": 1000
+         "default_threshold": 500
     },
     "ms": {
          "base": 0x038AD5B8,
@@ -133,14 +133,21 @@ class GUI:
                 try:
                     self.resource_config[resource_key].threshold = int(setting)
                 except ValueError:
-                    self.resource_config[resource_key].threshold = 0
+                    pass
                 self.threshold_entries[resource_key].delete(0, tk.END)
                 self.threshold_entries[resource_key].insert(0, setting)
+        else:
+            for resource_key, resource_obj in self.resource_config.items():
+                self.threshold_entries[resource_key].delete(0, tk.END)
+                self.threshold_entries[resource_key].insert(0, str(resource_obj.threshold))
+            self.save_settings()
 
     def save_settings(self):
         with open(self.setting_file, "w") as f:
-            line = ",".join([self.threshold_entries[key].get() if self.threshold_entries[key].get() else "0"
-                             for key in self.threshold_entries])
+            line = ",".join(
+                [self.threshold_entries[key].get() if self.threshold_entries[key].get() else "0"
+                 for key in self.threshold_entries]
+            )
             f.write(line)
 
     def exit_app(self):
@@ -196,9 +203,7 @@ class ChickenBot:
         self.PROCESS_NAME = "PathOfExileSteam.exe"
         self.ESCAPED = False
         self.is_monitoring = False
-
         self.gui = GUI(self.run_monitor, self.stop_monitor)
-
         self.pointer = None
         self.pm = None
         self.hwnd = None
@@ -209,7 +214,6 @@ class ChickenBot:
         except Exception as e:
             self.gui.send_info("PoE2 process is not running", "err")
             raise Exception("PoE2 process is not running") from e
-
         hwnd = win32gui.FindWindow(None, "Path of Exile 2")
         if not hwnd:
             self.gui.send_info("Cannot find game window!", "err")
@@ -262,14 +266,14 @@ class ChickenBot:
                 self.ESCAPED = False
 
             current_time = time.time()
-            if (resource_int == 0 or resource_int >= 20000 or self.ESCAPED) and (current_time - last_backend_setup > backend_interval):
+            if ((resource_int == 0 or resource_int >= 20000 or self.ESCAPED)
+                    and (current_time - last_backend_setup > backend_interval)):
                 print("Waiting for memory data...")
                 try:
                     self._setup_backend()
                     last_backend_setup = current_time
                 except Exception:
                     pass
-
             time.sleep(0.05)
 
     def setup_pointer(self):
