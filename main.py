@@ -23,7 +23,7 @@ import threading
 import pymem
 import win32api
 import win32con
-import win32gui
+import win32gui  # pywin32
 
 import tkinter as tk
 import keyboard
@@ -110,7 +110,7 @@ class GUI:
 
         self.selected_resource = tk.StringVar(value="hp")
         self.escape_status_label = None
-        self.setting_file = "poe2_chicken_bot.config"
+        self.setting_file = "poe2-chicken-bot.config"
         self.start_monitor = start_monitor
         self.stop_monitor = stop_monitor
 

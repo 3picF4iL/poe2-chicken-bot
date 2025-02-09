@@ -1,0 +1,39 @@
+on:
+  # Manually trigger the workflow from the GitHub Actions page
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      FILENAME: "poe2-chicken-bot"
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install PyInstaller
+      run: pip install pyinstaller
+
+    - name: Build executable
+      run: pyinstaller poe2-chicken-bot.spec
+      shell: cmd
+
+    - name: Check if executable was created
+      run: |
+        if not exist .\dist\${{ env.FILENAME }}\${{ env.FILENAME }}.exe (
+          echo "Executable file not found."
+          exit 1
+        )
+      shell: cmd
+
+    - name: Upload the full package
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.FILENAME }}.exe
+        path: dist/${{ env.FILENAME }}.exe
