@@ -51,6 +51,8 @@ RESOURCE_CONFIG = {
     }
 }
 
+DEFAULT_WINDOW_GEOMETRY = "275x180"
+
 
 class Resource:
     """
@@ -102,9 +104,8 @@ class GUI:
         """
         self.root = tk.Tk()
         self.root.title("PoE2 Chicken Bot")
-        self.root.geometry("275x180")
+        self.root.geometry(DEFAULT_WINDOW_GEOMETRY)
         self.root.grid_columnconfigure(4, weight=1)
-        self.root.grid_rowconfigure(3, weight=1)
 
         self.create_menubar()
 
@@ -125,6 +126,7 @@ class GUI:
         self.monitor_button = None
         self.exit_button = None
         self.info_label = None
+        self.console = None
 
         self.create_widgets()
         self.load_settings()
@@ -133,6 +135,8 @@ class GUI:
         menubar = tk.Menu(self.root, tearoff=0)
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label='Save defaults', command=self.save_settings)
+        filemenu.add_separator()
+        filemenu.add_command(label='Console', command=self.console_trigger)
         menubar.add_cascade(label='File', menu=filemenu, underline=1)
         self.root.config(menu=menubar)
 
@@ -157,7 +161,7 @@ class GUI:
 
         self.info_label = tk.Label(self.root, text="")
         self.info_label.grid(row=5, column=0, sticky='we', padx=5, columnspan=5)
-
+        self.create_console()
         self.update_monitor_button(is_monitoring=False)
 
     def create_radiobutton(self, idx: int, text: str, resource_key: str):
@@ -195,11 +199,58 @@ class GUI:
         self.escape_status_label = tk.Label(self.root, text="No")
         self.escape_status_label.grid(row=3, column=1, sticky='nw', padx=5, pady=5)
 
-    def load_settings(self):
+    def create_console(self):
         """
-        Load the settings from the config file. If the file does not exist, use the default values.
+        Create a console widget to display messages.
         :return:
         """
+        self.console = tk.Text(self.root, height=10, width=50)
+        self.console.grid(row=6, column=0, columnspan=5, padx=5, pady=5, sticky='nw')
+
+        scrollbar = tk.Scrollbar(self.root, orient=tk.VERTICAL, command=self.console.yview)
+        scrollbar.grid(row=6, column=5, sticky='wns')
+        self.console.config(yscrollcommand=scrollbar.set)
+        self.console.insert(tk.END, "==== Console view ====\n")
+
+        # Hide the console with scrollbar
+        self.console.grid_remove()
+
+    def console_trigger(self):
+        """
+        Change the view to the console.
+        :return:
+        """
+        if self.console.winfo_ismapped():
+            self.console.grid_remove()
+            self.root.geometry(DEFAULT_WINDOW_GEOMETRY)
+
+        else:
+            self.console.grid()
+            self.resize_window(15, 175)
+
+    def write_to_console(self, msg: str):
+        """
+        Write a message to the console.
+        :param msg:
+        :return:
+        """
+        self.console.insert(tk.END, msg + "\n")
+        self.console.see(tk.END)
+
+    def resize_window(self, width: int, height: int):
+        """
+        Increase or decrease the window size.
+        :param width:
+        :param height:
+        :return:
+        """
+        # Get the current window size
+        _width = self.root.winfo_width()
+        _height = self.root.winfo_height()
+
+        self.root.geometry(f"{_width + width}x{_height + height}")
+
+    def load_settings(self):
         if os.path.isfile(self.setting_file):
             with open(self.setting_file, 'r') as f:
                 settings = f.read().split(',')
@@ -207,7 +258,7 @@ class GUI:
                 try:
                     self.resource_config[resource_key].threshold = int(setting)
                 except ValueError:
-                    pass
+                    continue
                 self.threshold_entries[resource_key].delete(0, tk.END)
                 self.threshold_entries[resource_key].insert(0, setting)
         else:
@@ -241,25 +292,36 @@ class GUI:
             self.monitor_button.destroy()
         if is_monitoring:
             self.monitor_button = tk.Button(self.root, text="Stop", command=self.stop_monitor)
-            self.send_info("Running...")
+            self.send_info("Running...", label_info=True)
         else:
             self.monitor_button = tk.Button(self.root, text="Start", command=self.start_monitor)
-            self.send_info("")
-        self.monitor_button.grid(row=4, column=1, sticky='we', padx=5, columnspan=2, pady=5)
+        self.monitor_button.grid(row=4, column=1, sticky='nw', padx=5, columnspan=2, pady=5)
 
-    def send_info(self, msg, msg_type='info'):
+    def send_info(self, msg, msg_type='info', label_info=False):
         """
         Send a message to the info label. The message type determines the color of the text.
+        Set the label_info param to True to display the message in the info label.
         :param msg:
         :param msg_type:
+        :param label_info:
         :return:
         """
+
         color_map = {
             'warn': 'orange',
             'err': 'red',
             'info': 'black'
         }
-        self.info_label.config(text=msg, fg=color_map.get(msg_type, 'black'))
+
+        if label_info:
+            self.info_label.config(text=msg, fg=color_map.get(msg_type, 'black'))
+
+        if not msg:
+            return
+
+        timestamp = time.strftime("%H:%M:%S", time.localtime())
+        _msg = f"{timestamp} - {msg}"
+        self.write_to_console(_msg)
 
     def get_selected_resource(self):
         """
@@ -360,13 +422,14 @@ class ChickenBot:
         try:
             self.pm = pymem.Pymem(self.PROCESS_NAME)
         except Exception as e:
-            self.gui.send_info("PoE2 process is not running", "err")
-            raise Exception("PoE2 process is not running") from e
+            self.gui.send_info("PoE2 process is not running", "err", label_info=True)
+            return
         hwnd = win32gui.FindWindow(None, "Path of Exile 2")
         if not hwnd:
-            self.gui.send_info("Cannot find game window!", "err")
-            raise Exception("Cannot find game window!")
+            self.gui.send_info("Cannot find game window!", "err", label_info=True)
+            return
         self.hwnd = hwnd
+        self.gui.send_info("Connected to PoE2 process")
         self.setup_pointer()
         return True
 
@@ -380,7 +443,7 @@ class ChickenBot:
         :return:
         """
         self.is_monitoring = False
-        self.gui.send_info("")
+        self.gui.send_info("Stopped.", label_info=True)
         self.gui.update_monitor_button(is_monitoring=False)
 
     def update_current_resource_display(self, value: int):
@@ -447,16 +510,16 @@ class ChickenBot:
             self.update_escape_status()
 
             if resource_int <= threshold and not self.ESCAPED:
-                print(f"HP: {resource_int} below threshold ({threshold}). Panic mode!")
+                self.gui.send_info(f"HP: {resource_int} below threshold ({threshold}). Panic mode")
                 self.panic()
             elif resource_int > threshold and self.ESCAPED:
-                print("HP above threshold, reset escape status")
+                self.gui.send_info("HP above threshold, reset escape status")
                 self.ESCAPED = False
 
             current_time = time.time()
             if ((resource_int == 0 or resource_int >= 20000 or self.ESCAPED)
                     and (current_time - last_backend_setup > backend_interval)):
-                print("Waiting for memory data...")
+                self.gui.send_info("Waiting for memory data...")
                 try:
                     self._setup_backend()
                     last_backend_setup = current_time
@@ -473,6 +536,7 @@ class ChickenBot:
         res_key = self.gui.get_selected_resource()
         resource_obj = self.gui.resource_config[res_key]
         self.pointer = resource_obj.calculate_address(self.pm, self.PROCESS_NAME)
+        self.gui.send_info(f"Pointer calculated: {hex(self.pointer)}")
 
     def run_monitor(self):
         """
@@ -486,7 +550,7 @@ class ChickenBot:
         try:
             self._setup_backend()
         except Exception as e:
-            print(e)
+            self.gui.send_info(f"Error setting up backend\n{e}", "err")
             return
 
         if self.pointer:
@@ -496,7 +560,6 @@ class ChickenBot:
         else:
             msg = f"Process {self.PROCESS_NAME} not found."
             self.gui.send_info(msg, "err")
-            print(msg)
 
     def panic(self):
         """
@@ -510,7 +573,7 @@ class ChickenBot:
             self.ESCAPED = True
         except Exception:
             self.gui.send_info("Game window not found!", "err")
-            exit(1)
+            self.is_monitoring = False
 
     @staticmethod
     def _kb_panic():
