@@ -51,6 +51,7 @@ RESOURCE_CONFIG = {
 }
 
 DEFAULT_WINDOW_GEOMETRY = "275x180"
+ICON_BITMAP = "media/poe2-chicken-bot.ico"
 
 
 class Resource:
@@ -104,6 +105,7 @@ class GUI:
         self.root = tk.Tk()
         self.root.title("PoE2 Chicken Bot")
         self.root.geometry(DEFAULT_WINDOW_GEOMETRY)
+        self.root.iconbitmap(ICON_BITMAP)
         self.root.grid_columnconfigure(4, weight=1)
 
         self.create_menubar()
