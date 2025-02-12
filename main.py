@@ -16,17 +16,16 @@ Description:
 """
 
 
-import os
-import time
-import threading
-
-import pymem
-import win32api
-import win32con
-import win32gui  # pywin32
-
 import tkinter as tk
-import keyboard
+
+from os import path
+from time import time, sleep, strftime, localtime
+from pymem import pymem
+from threading import Timer, Thread
+from win32api import PostMessage
+from win32con import VK_ESCAPE, WM_KEYDOWN
+from win32gui import FindWindow  # pylint: disable=no-name-in-module
+from keyboard import block_key, unblock_key
 
 
 # Resource configuration
@@ -251,7 +250,7 @@ class GUI:
         self.root.geometry(f"{_width + width}x{_height + height}")
 
     def load_settings(self):
-        if os.path.isfile(self.setting_file):
+        if path.isfile(self.setting_file):
             with open(self.setting_file, 'r') as f:
                 settings = f.read().split(',')
             for resource_key, setting in zip(self.resource_config.keys(), settings):
@@ -319,7 +318,7 @@ class GUI:
         if not msg:
             return
 
-        timestamp = time.strftime("%H:%M:%S", time.localtime())
+        timestamp = strftime("%H:%M:%S", localtime())
         _msg = f"{timestamp} - {msg}"
         self.write_to_console(_msg)
 
@@ -424,7 +423,7 @@ class ChickenBot:
         except Exception as e:
             self.gui.send_info("PoE2 process is not running", "err", label_info=True)
             return
-        hwnd = win32gui.FindWindow(None, "Path of Exile 2")
+        hwnd = FindWindow(None, "Path of Exile 2")
         if not hwnd:
             self.gui.send_info("Cannot find game window!", "err", label_info=True)
             return
@@ -496,7 +495,7 @@ class ChickenBot:
         """
         self.is_monitoring = True
         threshold = self.get_threshold()
-        last_backend_setup = time.time()
+        last_backend_setup = time()
         backend_interval = 2.0
 
         while self.is_monitoring:
@@ -516,7 +515,7 @@ class ChickenBot:
                 self.gui.send_info("HP above threshold, reset escape status")
                 self.ESCAPED = False
 
-            current_time = time.time()
+            current_time = time()
             if ((resource_int == 0 or resource_int >= 20000 or self.ESCAPED)
                     and (current_time - last_backend_setup > backend_interval)):
                 self.gui.send_info("Waiting for memory data...")
@@ -525,8 +524,8 @@ class ChickenBot:
                     last_backend_setup = current_time
                 except Exception:
                     pass
-            time.sleep(0.05)
-
+            sleep(0.05)
+        self.gui.update_monitor_button(is_monitoring=False)
     def setup_pointer(self):
         """
         Setup the pointer to the resource value in the game's memory. The pointer is calculated based on the selected
@@ -555,7 +554,7 @@ class ChickenBot:
 
         if self.pointer:
             self.gui.update_monitor_button(is_monitoring=True)
-            monitor_thread = threading.Thread(target=self.resource_monitor_loop, name="Monitor", daemon=True)
+            monitor_thread = Thread(target=self.resource_monitor_loop, name="Monitor", daemon=True)
             monitor_thread.start()
         else:
             msg = f"Process {self.PROCESS_NAME} not found."
@@ -568,7 +567,7 @@ class ChickenBot:
         :return:
         """
         try:
-            win32api.PostMessage(self.hwnd, win32con.WM_KEYDOWN, win32con.VK_ESCAPE, 0)
+            PostMessage(self.hwnd, WM_KEYDOWN, VK_ESCAPE, 0)
             self._kb_panic()
             self.ESCAPED = True
         except Exception:
@@ -581,9 +580,9 @@ class ChickenBot:
         Block the escape and space keys for 2 seconds to prevent accidental game resuming (and probably death ^^).
         :return:
         """
-        keyboard.block_key('esc')
-        keyboard.block_key('space')
-        timer = threading.Timer(2.0, lambda: (keyboard.unblock_key('esc'), keyboard.unblock_key('space')))
+        block_key('esc')
+        block_key('space')
+        timer = Timer(2.0, lambda: (unblock_key('esc'), unblock_key('space')))
         timer.start()
 
     def read_resource_value(self, addr: int):
