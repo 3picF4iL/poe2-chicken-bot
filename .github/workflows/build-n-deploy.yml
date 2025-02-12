@@ -4,6 +4,16 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy application'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   build:
@@ -34,6 +44,7 @@ jobs:
 
     - name: Create deployment
       uses: softprops/action-gh-release@v2
+      if: ${{ github.event_name == 'push' || inputs.deploy == 'true' }}
       with:
         files: dist/poe2-chicken-bot.exe
       env:
