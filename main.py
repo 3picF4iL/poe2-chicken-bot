@@ -27,7 +27,6 @@ from win32con import VK_ESCAPE, WM_KEYDOWN
 from win32gui import FindWindow  # pylint: disable=no-name-in-module
 from keyboard import block_key, unblock_key
 
-
 # Resource configuration
 # Base and offsets are used to calculate the memory address of the resource value. This is specific to the game's
 # memory layout and may, unfortunately, change with game updates.
@@ -52,6 +51,7 @@ RESOURCE_CONFIG = {
 
 DEFAULT_WINDOW_GEOMETRY = "275x180"
 ICON_BITMAP = "media/poe2-chicken-bot.ico"
+ICON_PATH = path.join(path.dirname(__file__), ICON_BITMAP)
 
 
 class Resource:
@@ -105,8 +105,10 @@ class GUI:
         self.root = tk.Tk()
         self.root.title("PoE2 Chicken Bot")
         self.root.geometry(DEFAULT_WINDOW_GEOMETRY)
-        self.root.iconbitmap(ICON_BITMAP)
+        self.root.iconbitmap(ICON_PATH)
         self.root.grid_columnconfigure(4, weight=1)
+        self.root.wm_minsize(*DEFAULT_WINDOW_GEOMETRY.split('x'))
+        self.root.wm_maxsize(390, 370)
 
         self.create_menubar()
 
@@ -296,7 +298,7 @@ class GUI:
             self.send_info("Running...", label_info=True)
         else:
             self.monitor_button = tk.Button(self.root, text="Start", command=self.start_monitor)
-        self.monitor_button.grid(row=4, column=1, sticky='nw', padx=5, columnspan=2, pady=5)
+        self.monitor_button.grid(row=4, column=1, sticky='we', padx=5, columnspan=3, pady=5)
 
     def send_info(self, msg, msg_type='info', label_info=False):
         """

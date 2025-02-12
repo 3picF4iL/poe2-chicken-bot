@@ -2,6 +2,7 @@ block_cipher = None
 
 a = Analysis(['main.py'],
              pathex=['.'],
+             datas=[('media/', 'media/')],
              hiddenimports=[],
              cipher=block_cipher)
 
