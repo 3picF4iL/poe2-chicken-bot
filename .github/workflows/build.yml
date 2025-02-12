@@ -30,3 +30,9 @@ jobs:
     - name: Build python app
       run: |
         python -m py_compile main.py
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: poe2-chicken-bot
+        path: dist/poe2-chicken-bot.exe
