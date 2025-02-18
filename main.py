@@ -33,18 +33,18 @@ from keyboard import block_key, unblock_key
 # TODO: Add a way to automatically find the base and offsets.
 RESOURCE_CONFIG = {
     "hp": {
-         "base": 0x03BA8868,
+         "base": 0x03BB09E8,
          "offsets": [0x98, 0x68, 0x474],
          "default_threshold": 500
     },
     "mp": {
-         "base": 0x03CCF4F8,
-         "offsets": [0x58, 0x0, 0x110, 0xF8, 0x1A0, 0x19C],
+         "base": 0x03BB09E8,
+         "offsets": [0x58, 0x60, 0xF80],
          "default_threshold": 500
     },
     "ms": {
-         "base": 0x038AD5B8,
-         "offsets": [0xC8, 0x18, 0x110, 0xF8, 0x1A0, 0x1A0],
+         "base": 0x03BB09E8,
+         "offsets": [0x58, 0x60, 0x78C],
          "default_threshold": 10
     }
 }
