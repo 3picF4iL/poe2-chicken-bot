@@ -33,17 +33,17 @@ from keyboard import block_key, unblock_key
 # TODO: Add a way to automatically find the base and offsets.
 RESOURCE_CONFIG = {
     "hp": {
-         "base": 0x03BB09E8,
+         "base": 0x03B9AD28,
          "offsets": [0x98, 0x68, 0x474],
          "default_threshold": 500
     },
     "mp": {
-         "base": 0x03BB09E8,
+         "base": 0x03B9AD28,
          "offsets": [0x58, 0x60, 0xF80],
          "default_threshold": 500
     },
     "ms": {
-         "base": 0x03BB09E8,
+         "base": 0x03B9AD28,
          "offsets": [0x58, 0x60, 0x78C],
          "default_threshold": 10
     }
@@ -446,6 +446,8 @@ class ChickenBot:
         :return:
         """
         self.is_monitoring = False
+        self.ESCAPED = False
+        self.unblock_keys()
         self.gui.send_info("Stopped.", label_info=True)
         self.gui.update_monitor_button(is_monitoring=False)
 
@@ -530,6 +532,7 @@ class ChickenBot:
                     pass
             sleep(0.05)
         self.gui.update_monitor_button(is_monitoring=False)
+
     def setup_pointer(self):
         """
         Setup the pointer to the resource value in the game's memory. The pointer is calculated based on the selected
@@ -578,16 +581,29 @@ class ChickenBot:
             self.gui.send_info("Game window not found!", "err")
             self.is_monitoring = False
 
-    @staticmethod
-    def _kb_panic():
+    def _kb_panic(self):
         """
         Block the escape and space keys for 2 seconds to prevent accidental game resuming (and probably death ^^).
         :return:
         """
         block_key('esc')
         block_key('space')
-        timer = Timer(2.0, lambda: (unblock_key('esc'), unblock_key('space')))
+        timer = Timer(2.0, lambda: (self.unblock_keys()))
         timer.start()
+
+    @staticmethod
+    def unblock_keys():
+        """
+        Unblock the escape and space keys.
+        Try to unblock the escape and space keys even if they are not blocked.
+        This prevents keys from being blocked indefinitely.
+        :return:
+        """
+        try:
+            unblock_key('esc')
+            unblock_key('space')
+        except KeyError:
+            pass
 
     def read_resource_value(self, addr: int):
         """
